@@ -1,0 +1,173 @@
+// Blog Management Dashboard schema.
+// SQLite by default. To use PostgreSQL (e.g. Supabase), change `provider` to "postgresql",
+// point DATABASE_URL at your database and run `npx prisma migrate dev`.
+// Enum-like fields are strings (validated in src/lib/validation.ts) so the schema stays portable.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  /// super_admin | administrator | editor | author | contributor
+  role         String    @default("contributor")
+  active       Boolean   @default(true)
+  bio          String?
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  posts    Post[]
+  sessions Session[]
+  media    Media[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userAgent String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String?
+  parentId    String?
+  parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Category[] @relation("CategoryTree")
+  posts       Post[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  posts     Post[]
+  createdAt DateTime @default(now())
+}
+
+model Post {
+  id              String    @id @default(cuid())
+  title           String
+  slug            String    @unique
+  /// Sanitized HTML produced by the rich-text editor
+  content         String    @default("")
+  excerpt         String?
+  /// draft | pending | scheduled | published | archived
+  status          String    @default("draft")
+  featured        Boolean   @default(false)
+  publishedAt     DateTime?
+  scheduledAt     DateTime?
+
+  authorId        String
+  author          User      @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  categoryId      String?
+  category        Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  tags            Tag[]
+
+  featuredImageId String?
+  featuredImage   Media?    @relation("FeaturedImage", fields: [featuredImageId], references: [id], onDelete: SetNull)
+  ogImageId       String?
+  ogImage         Media?    @relation("OgImage", fields: [ogImageId], references: [id], onDelete: SetNull)
+
+  metaTitle       String?
+  metaDescription String?
+  focusKeyword    String?
+  canonicalUrl    String?
+  noIndex         Boolean   @default(false)
+  noFollow        Boolean   @default(false)
+
+  seoScore        Int       @default(0)
+  wordCount       Int       @default(0)
+  readingTime     Int       @default(0)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  comments Comment[]
+  views    PageView[]
+
+  @@index([status])
+  @@index([publishedAt])
+  @@index([authorId])
+  @@index([categoryId])
+}
+
+model Media {
+  id           String   @id @default(cuid())
+  /// Stored file name on disk (random, never user-controlled)
+  filename     String   @unique
+  originalName String
+  mimeType     String
+  size         Int
+  alt          String?
+  caption      String?
+  uploadedById String?
+  uploadedBy   User?    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+
+  featuredIn Post[] @relation("FeaturedImage")
+  ogImageIn  Post[] @relation("OgImage")
+}
+
+model Comment {
+  id          String   @id @default(cuid())
+  postId      String
+  post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorName  String
+  authorEmail String
+  authorUrl   String?
+  content     String
+  /// pending | approved | spam | rejected
+  status      String   @default("pending")
+  ipHash      String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+  @@index([postId])
+}
+
+/// One row per real page view recorded by the public blog's tracker.
+model PageView {
+  id          String   @id @default(cuid())
+  postId      String?
+  post        Post?    @relation(fields: [postId], references: [id], onDelete: SetNull)
+  path        String
+  /// Anonymous, salted hash identifying a visitor (no raw IPs stored)
+  visitorId   String
+  referrer    String?
+  /// direct | search | social | referral | email | campaign
+  source      String   @default("direct")
+  utmSource   String?
+  /// Seconds of active engagement, reported when the visitor leaves the page
+  durationSec Int?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([postId])
+  @@index([visitorId])
+}
+
+model Setting {
+  key   String @id
+  value String
+}

@@ -1,0 +1,49 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --color-navy-950: #0a1430;
+  --color-navy-900: #0f1b3d;
+  --color-navy-800: #1e2a4f;
+  --color-navy-700: #334166;
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-soft: #eff4ff;
+  --color-surface: #f6f8fb;
+  --color-border: #e4e8ef;
+  --color-muted: #64708a;
+  --color-series-1: #2563eb;
+  --color-series-2: #0d9488;
+  --shadow-card: 0 1px 2px rgba(15, 27, 61, 0.04), 0 1px 3px rgba(15, 27, 61, 0.06);
+  --shadow-pop: 0 10px 30px -10px rgba(15, 27, 61, 0.25), 0 2px 6px rgba(15, 27, 61, 0.08);
+}
+
+@layer base {
+  html { -webkit-font-smoothing: antialiased; }
+  body { background: #ffffff; color: var(--color-navy-900); }
+  *, ::before, ::after { border-color: var(--color-border); }
+  :focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+  button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
+  /* Scroll containers must be the containing block, or absolutely positioned
+     descendants (e.g. .sr-only table headers) escape the clip and widen the page. */
+  .overflow-x-auto, .overflow-auto { position: relative; }
+}
+
+@keyframes nav-progress {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(300%); }
+}
+
+/* Rich-text editor surface */
+.tiptap { outline: none; min-height: 420px; }
+.tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #9aa3b5;
+  pointer-events: none;
+  height: 0;
+}
+.tiptap img { border-radius: 0.5rem; max-width: 100%; height: auto; }
+.tiptap img.ProseMirror-selectednode { outline: 3px solid var(--color-primary); }
+.tiptap div[data-youtube-video] iframe, .post-body div[data-youtube-video] iframe { width: 100%; aspect-ratio: 16 / 9; height: auto; border-radius: 0.5rem; }
